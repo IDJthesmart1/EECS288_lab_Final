@@ -40,13 +40,21 @@ void loop() {
     uint16_t strength = Strength_L | (Strength_H << 8);
     uint8_t reserved = ser_read();
     uint8_t quality = ser_read();
-    // Checksum parity bit is a low 8-bit, Checksum = Byte1 + Byte2 + ... +
-    // Byte8, Checksum is the sum of the first 8 bytes of actual data; here is
-    // only a low 8-bit
+    // Checksum is the lower 8 bits of the sum of the first 8 bytes of actual data
     uint8_t calculated_checksum =
         (uint8_t)('Y' + 'Y' + Dist_L + Dist_H + Strength_L + Strength_H +
                   reserved + quality);
     uint8_t checksum = ser_read();
+    // distance is a 16-bit value, with a valid range of 30 to 1200 cm
+
+    if (checksum == calculated_checksum) { // Transmission is valid, process it
+      distance -= 30;
+      distance /= 3;
+      if (distance > 255) { distance = 255; }
+      // distance is now a value between 0 and 255 where each unit represents 3 cm
+      // Valid range of 30 - 795 cm
+      ser_write((uint8_t)distance);
+    }
   }
   return;
 }

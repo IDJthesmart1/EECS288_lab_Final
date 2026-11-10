@@ -170,18 +170,18 @@ SREG = oldSREG;
 return;
 }
 
-void uart_init() { // From Lab4
-  // Update baud rate with ubrr value. Initialize ubrr to calculated
-  uint16_t ubrr = (uint16_t)((uint32_t)16000000 / ((uint32_t)8 * (uint32_t)115200)) - (uint16_t)1;
+void uart_init() {
+  // 57,600 baud (bits per second)
+  // 138.89 microseconds per byte
+  uint16_t ubrr = 16; // (16000000 / (8 * 115200)) - 1
   UBRR0H = (ubrr >> 8);
   UBRR0L = ubrr;
 
   // Setup double speed mode. Modify U2X0 only to set it in UCSR0A for double speed mode
   UCSR0A |= 1 << U2X0;
-
   // Enable transmitter/receiver
   UCSR0B = (1 << RXEN0) | (1 << TXEN0);
-  // 8-bit data, leaves parity/stop/mode todefaults (no parity, 1 stop, async)
+  // 8-bit data, leaves parity/stop/mode to defaults (no parity, 1 stop, async)
   UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
 }
 
@@ -211,14 +211,14 @@ void ser_printline(const char *str) {
     ser_write('\r'); // carriage return
 }
 
-char ser_read() {
+char ser_read() { // 8bit data
     while (!(UCSR0A & (1 << RXC0))) {
         // Wait until data is received
     }
     return UDR0; // Return received byte from buffer
 }
 
-void ser_write(const char c) {
+void ser_write(const char c) { // 8bit data
     while (!(UCSR0A & (1 << UDRE0))) {
         // Wait until transmit buffer is empty
     }

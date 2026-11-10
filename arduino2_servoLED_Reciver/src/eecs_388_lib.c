@@ -343,6 +343,7 @@ while (!(UCSR0A & (1 << RXC0)))
 return UDR0; // Return received byte from buffer
 }
 
+//
 void ser_write(const char c) 
 {
 while (!(UCSR0A & (1 << UDRE0))) 
@@ -355,12 +356,17 @@ UDR0 = c; // Load data into transmit register
 
 void uart_init() 
 {
-    uint16_t ubrr = 16;
-	UBRR0H = (ubrr >> 8);
-    UBRR0L = ubrr;
+  // 57,600 baud (bits per second)
+  // 138.89 microseconds per byte
+  uint16_t ubrr = 16; // (16000000 / (8 * 115200)) - 1
+  UBRR0H = (ubrr >> 8);
+  UBRR0L = ubrr;
 
-	UCSR0A |= (1 << U2X0);  //modify U2X0 only to set it in UCSR0A for double speed mode
-    UCSR0B = (1 << RXEN0) | (1 << TXEN0 );   // Enable transmitter/receiver
-	UCSR0C = (1 << UCSZ01) | (1 << UCSZ00); // 8-bit data, leaves parity/stop/mode to defaults (no parity, 1 stop, async)
+  // Setup double speed mode. Modify U2X0 only to set it in UCSR0A for double speed mode
+  UCSR0A |= 1 << U2X0;
+  // Enable transmitter/receiver
+  UCSR0B = (1 << RXEN0) | (1 << TXEN0);
+  // 8-bit signal, (7 data bits, no parity, 1 stop, async)
+  UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
 }
 
