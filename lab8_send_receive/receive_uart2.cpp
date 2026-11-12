@@ -13,9 +13,9 @@ struct LED {
   bool isOn;
 };
 
-LED red = {GPIO_13, false};
-LED green = {GPIO_12, false};
-LED blue = {GPIO_11, false};
+LED red = { GPIO_13, false };
+LED green = { GPIO_12, false };
+LED blue = { GPIO_11, false };
 //-------------------------------------------------------------------------------
 
 /******************************************************************************
@@ -40,7 +40,7 @@ void setup() {
 // Custom functions - From Lab 4
 //------------------------------------------------------------------------------
 
-void toggle(LED &led) {
+void toggle(LED& led) {
   if (led.isOn) {
     gpio_write(led.pin, OFF);
     led.isOn = false;
@@ -50,12 +50,12 @@ void toggle(LED &led) {
   }
 }
 
-void turnOn(LED &led) {
+void turnOn(LED& led) {
   gpio_write(led.pin, ON); // Active high
   led.isOn = true;
 }
 
-void turnOff(LED &led) {
+void turnOff(LED& led) {
   gpio_write(led.pin, OFF); // Active high
   led.isOn = false;
 }

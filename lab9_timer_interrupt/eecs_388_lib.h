@@ -36,26 +36,26 @@
 extern "C" {
 #endif
 
-void delay_ms(unsigned long ms);
-void gpio_mode(uint8_t pin, uint8_t mode);
-void gpio_write(uint8_t pin, uint8_t val);
-void ser_printf(const char *format, ...);
-void ser_printline(const char *str);
-char ser_read();
-void ser_write(const char c);
-void uart_init();
+  void delay_ms(unsigned long ms);
+  void gpio_mode(uint8_t pin, uint8_t mode);
+  void gpio_write(uint8_t pin, uint8_t val);
+  void ser_printf(const char* format, ...);
+  void ser_printline(const char* str);
+  char ser_read();
+  void ser_write(const char c);
+  void uart_init();
 
-/******************************************************************************
- *  Timer Interrupt Function Prototypes
- *******************************************************************************/
-uint16_t get_cycles(void);
-void set_cycles(uint16_t cycle);
+  /******************************************************************************
+   *  Timer Interrupt Function Prototypes
+   *******************************************************************************/
+  uint16_t get_cycles(void);
+  void set_cycles(uint16_t cycle);
 
-void enable_interrupt(void);
-void disable_interrupt(void);
+  void enable_interrupt(void);
+  void disable_interrupt(void);
 
-void enable_timer_interrupt(void);
-void disable_timer_interrupt(void);
+  void enable_timer_interrupt(void);
+  void disable_timer_interrupt(void);
 
 #ifdef __cplusplus
 }

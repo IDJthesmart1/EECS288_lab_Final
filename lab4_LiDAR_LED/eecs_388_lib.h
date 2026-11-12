@@ -36,14 +36,14 @@
 extern "C" {
 #endif
 
-void delay_ms(unsigned long ms);
-void gpio_mode(uint8_t pin, uint8_t mode);
-void gpio_write(uint8_t pin, uint8_t val);
-void ser_printf(const char *format, ...);
-void ser_printline(const char *str);
-char ser_read();
-void ser_write(const char c);
-void uart_init();
+  void delay_ms(unsigned long ms);
+  void gpio_mode(uint8_t pin, uint8_t mode);
+  void gpio_write(uint8_t pin, uint8_t val);
+  void ser_printf(const char* format, ...);
+  void ser_printline(const char* str);
+  char ser_read();
+  void ser_write(const char c);
+  void uart_init();
 
 #ifdef __cplusplus
 }
