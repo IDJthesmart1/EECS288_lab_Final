@@ -12,18 +12,56 @@
  *******************************************************************************/
 
 /*ServoMotor constants*/
-#define SERVO_PULSE_MAX (2400)    /* 2400 us */
-#define SERVO_PULSE_MIN (544)     /* 544 us */
+#define SERVO_PULSE_MAX (2400)    /* 2400 us (2.4ms) */
+#define SERVO_PULSE_MIN (544)     /* 544 us (0.544ms) */
 #define SERVO_PERIOD    (20000)   /* 20000 us (20ms) */
 #define MIN_ANGLE       (0)       /* degrees */
 #define MAX_ANGLE       (180)     /* degrees */
+// Speed assumes no load and slowest case of 4.8V
+#define SERVO_SPEED     (2000)    /* 2000 us/deg (0.12 seconds per 60 degrees) */
 
+#define SERVO_1         (GPIO_6)
+int angle_state_1;
 
-/******************************************************************************
- *   Local function prototypes
- *******************************************************************************/
-static void auto_brake();
-static void steering(int pos);
+//------------------------------------------------------------------------------
+// Application specific definitions
+//------------------------------------------------------------------------------
+struct LED {
+  uint8_t pin;
+  bool isOn;
+};
+
+LED red = { GPIO_13, false };
+LED green = { GPIO_12, false };
+LED blue = { GPIO_11, false };
+
+struct Servo {
+  uint8_t pin;
+  int angle_state;
+};
+
+Servo steering = { GPIO_6, MIN_ANGLE };
+//-------------------------------------------------------------------------------
+
+void toggle(LED& led) {
+  if (led.isOn) {
+    gpio_write(led.pin, OFF);
+    led.isOn = false;
+  } else {
+    gpio_write(led.pin, ON);
+    led.isOn = true;
+  }
+}
+
+void turnOn(LED& led) {
+  gpio_write(led.pin, ON);
+  led.isOn = true;
+}
+
+void turnOff(LED& led) {
+  gpio_write(led.pin, OFF);
+  led.isOn = false;
+}
 
 /******************************************************************************
  *   Function: auto_brake() - Auto Brake
@@ -39,55 +77,47 @@ static void auto_brake() {
 }
 
 
+const unsigned long pulse_range = SERVO_PULSE_MAX - SERVO_PULSE_MIN;
+const unsigned long angle_range = MAX_ANGLE - MIN_ANGLE;
 /******************************************************************************
- *   Function: steering() - Steering
+ *   Function: goToAngle() - Servo Motor Pulse
  *      Pre condition:
- *          None
+ *          Assumes GPIO pin used has been configured for output
+ *          Assumes GPIO pin is off at call time
  *      Post condition:
- *          Control the servomotor with GPIO_6
+ *          Calculates a duty cycle in microseconds for the amount of on time
+ *          needed to achieve the angle passed in
+ *      Input:
+ *          gpio - GPIO pin number to use for the servo
+ *          angle - Angle to set the servo to (0 to 180 degrees)
  *******************************************************************************/
-static void steering(int pos) {
-  const unsigned long pulse_range = SERVO_PULSE_MAX - SERVO_PULSE_MIN;
-  const unsigned long angle_range = MAX_ANGLE - MIN_ANGLE;
-  /******************************************************************************
-   *   Function: servo() - Servo Motor Pulse
-   *      Pre condition:
-   *          Assumes GPIO pin used has been configured for output
-   *          Assumes GPIO pin is off at call time
-   *      Post condition:
-   *          Calculates a duty cycle in microseconds for the amount of on time
-   *          needed to achieve the angle passed in
-   *      Input:
-   *          gpio - GPIO pin number to use for the servo
-   *          angle - Angle to set the servo to (0 to 180 degrees)
-   *******************************************************************************/
-  static void servo(int gpio, int angle) {
-    unsigned long int on_time_us;
-    unsigned long int off_time_us;
-    if (angle < MIN_ANGLE) {
-      on_time_us = SERVO_PULSE_MIN;
-    } else if (angle > MAX_ANGLE) {
-      on_time_us = SERVO_PULSE_MAX;
-    } else {
-      on_time_us = SERVO_PULSE_MIN + ((unsigned long)(angle - MIN_ANGLE) * pulse_range) / angle_range;
-    }
-    off_time_us = SERVO_PERIOD - on_time_us;
+static void goToAngle(Servo servo, int angle) {
+  unsigned long int on_time_us;
+  unsigned long int off_time_us;
+  if (angle < MIN_ANGLE) {
+    on_time_us = SERVO_PULSE_MIN;
+  } else if (angle > MAX_ANGLE) {
+    on_time_us = SERVO_PULSE_MAX;
+  } else {
+    on_time_us = SERVO_PULSE_MIN + ((unsigned long)(angle - MIN_ANGLE) * pulse_range) / angle_range;
+  }
+  off_time_us = SERVO_PERIOD - on_time_us;
 
-    //int travel_degrees = abs(angle - angle_state);
-    //int loops = (travel_degrees * SERVO_SPEED) / SERVO_PERIOD;
-    //for (int i = 0; i <= loops; i++) {
-    gpio_write(gpio, 1);
+  int travel_degrees = abs(angle - servo.angle_state);
+  int loops = (travel_degrees * SERVO_SPEED) / SERVO_PERIOD;
+  for (int i = 0; i <= loops; i++) {
+    gpio_write(servo.pin, 1);
     delay_ms(on_time_us / 1000);
     delay_us(on_time_us % 1000);
-    gpio_write(gpio, 0);
+    gpio_write(servo.pin, 0);
     delay_ms(off_time_us / 1000);
     delay_us(off_time_us % 1000);
-    //}
-    //angle_state = angle;
-
-    return;
   }
+  servo.angle_state = angle;
+
+  return;
 }
+
 
 /******************************************************************************
  *   Function: setup() - Initializes the Arduino System
@@ -124,28 +154,14 @@ void setup() {
 void loop() {
 // Task-4: 
 // Setup simulated code for the angles from the lab sheet
-  int angle;
+  int angle[] = { 10, 25, 75, 45, 100, 40, 125, 15, 150, 50, 170 };
 
   // Task-1&2:
   // Receive data from arudino1 for the distance and setup the LEDs
   auto_brake();
 
   //  Task-4:
-  for (int i = 0; i < 10; i++) {
-    // Here, we set the angle to 180 if the prediction from the DNN is a positive angle
-    // and 0 if the prediction is a negative angle.
-    // This is so that it is easier to see the movement of the servo.
-    // You are welcome to pass the angle values directly to the steering function.
-    // If the servo function is written correctly, it should still work,
-    // only the movements of the servo will be more subtle
-    if (angle > 0) {
-      steering(180);
-    } else {
-      steering(0);
-    }
-
-  // Uncomment the line below to see the actual angles on the servo.
-  // Remember to comment out the if-else statement above!
-  // steering(angle);
+  for (int i : angle) {
+    goToAngle(steering, angle[i]);
   }
 }

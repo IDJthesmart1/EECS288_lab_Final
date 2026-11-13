@@ -204,97 +204,6 @@ void gpio_write(uint8_t pin, uint8_t val) {
   return;
 }
 
-void i2c_init(void) {
-  TWSR = 0x00;
-  TWBR = ((F_CPU / SCL_CLOCK) - 16) / 2;
-}
-
-void i2c_start(void) {
-  TWCR = (1 << TWSTA) | (1 << TWEN) | (1 << TWINT);
-  uint16_t timeout = 10000;
-  while (!(TWCR & (1 << TWINT)) && --timeout);
-  if (timeout == 0) {
-    ser_printf("I2C START timeout");
-  }
-}
-
-void i2c_stop(void) {
-  TWCR = (1 << TWSTO) | (1 << TWEN) | (1 << TWINT);
-  while (TWCR & (1 << TWSTO));
-}
-
-void i2c_write_address(uint8_t address) {
-  TWDR = address;
-  TWCR = (1 << TWEN) | (1 << TWINT);
-  uint16_t timeout = 10000;
-  while (!(TWCR & (1 << TWINT)) && --timeout);
-
-  uint8_t status = TWSR & 0xF8;
-  if (status == TW_MT_SLA_ACK || status == TW_MR_SLA_ACK) {
-    return;
-  }
-
-  ser_printf("Address write failed: TWSR=0x%02X\n", status);
-}
-
-void i2c_write(uint8_t data) {
-  TWDR = data;
-  TWCR = (1 << TWEN) | (1 << TWINT);
-  uint16_t timeout = 10000;
-  while (!(TWCR & (1 << TWINT)) && --timeout);
-
-  uint8_t status = TWSR & 0xF8;
-  if (status == TW_MT_SLA_ACK || status == TW_MT_DATA_ACK) {
-    return;
-  }
-
-  ser_printf("Write failed: TWSR=0x%02X\n", status);
-}
-
-uint8_t i2c_read_ack(void) {
-  TWCR = (1 << TWEN) | (1 << TWINT) | (1 << TWEA);
-  while (!(TWCR & (1 << TWINT)));
-  return TWDR;
-}
-
-uint8_t i2c_read_nack(void) {
-  TWCR = (1 << TWEN) | (1 << TWINT);
-  while (!(TWCR & (1 << TWINT)));
-  return TWDR;
-}
-
-/******************************************************************************
- *   Function: scan_i2c_bus() - Scan I2C Bus
- *      Pre condition:
- *          Hardware must be properly connected (BMP180 sensors, etc.)
- *          i2c_init() must have been run
- *      Post condition:
- *          Scans for connected devices and reports their addresses
- *******************************************************************************/
-void scan_i2c_bus(void) {
-  ser_printf("Scanning I2C addresses...\n");
-
-  for (uint8_t addr = 0x8; addr <= 0x77; addr++) {
-    // Send START
-    TWCR = (1 << TWSTA) | (1 << TWEN) | (1 << TWINT);
-    while (!(TWCR & (1 << TWINT)));
-    // Send slave address with write bit (addr << 1 | 0)
-    TWDR = (addr << 1);
-    TWCR = (1 << TWEN) | (1 << TWINT);
-    while (!(TWCR & (1 << TWINT)));
-    // Check for ACK
-    uint8_t status = TWSR & 0xF8;
-    if (status == 0x18) { // SLA+W transmitted, ACK received
-      ser_printf("Device found at 0x%02X\n", addr);
-    }
-    // Send STOP
-    TWCR = (1 << TWEN) | (1 << TWSTO) | (1 << TWINT);
-    while (TWCR & (1 << TWSTO)); // Wait for stop to finish
-  }
-
-  ser_printf("Scan complete.\n");
-}
-
 void ser_printf(const char* format, ...) {
   char buffer[128];
 
@@ -321,6 +230,8 @@ void ser_printline(const char* str) {
   ser_write('\r'); // carriage return
 }
 
+// Read distance is a value between 0 and 255 where each unit represents 2 cm
+// Valid range of 30 - 540 cm
 char ser_read() {
   while (!(UCSR0A & (1 << RXC0))) {
     // Wait until data is received
