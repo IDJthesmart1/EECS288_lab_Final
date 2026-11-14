@@ -1,11 +1,8 @@
 /******************************************************************************
  *   Header Includes
  *******************************************************************************/
-#include <Arduino.h>
-#include <stdint.h>
-#include <stdio.h>
+
 #include "timer.h"
-#include "eecs_388_lib.h"
 
 /******************************************************************************
  *   Function: setup() - Initializes the Arduino System
@@ -18,18 +15,17 @@
 void setup() 
 {
     uart_init();
-    enable_interrupt();
-    set_interrupt_timer(1e6, 1);
-    gpio_mode(GPIO_13, GPIO_OUTPUT);
-    gpio_write(GPIO_13, OFF);
+
+    unsigned char pin;
+
+    setup_period(1, 1e6);
+    config_chan(1, CHANNEL_A, CTCNORM_TOGGLE_OUT);
+    get_timer_pin(1, CHANNEL_A, &pin);
+
+    ser_printf("Setup blinking on pin: %d", pin);
+
+    gpio_mode(pin, GPIO_OUTPUT);
     return;
-}
-
-volatile uint8_t on = 0;
-
-ISR(TIMER1_COMPA_vect) {
-    gpio_write(GPIO_13, on ? ON : OFF);
-    on = on ? 0 : 1;
 }
 
 /******************************************************************************
