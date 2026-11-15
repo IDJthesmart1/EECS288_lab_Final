@@ -80,7 +80,7 @@ uint8_t config_wgen(unsigned char timer, unsigned char wgm);
 #define CHANNEL_B   (0b1)
 
 uint8_t config_chan(unsigned char timer, unsigned char channel, unsigned char ctrl);
-uint8_t get_timer_pin(unsigned char timer, unsigned char channel, unsigned char *pin);
+uint8_t get_timer_pin(unsigned char timer, unsigned char channel, unsigned char* pin);
 
 /************************************************************************/
 /* TIMER CLOCK CONTROL                                                  */
@@ -132,21 +132,21 @@ uint8_t force_output(unsigned char timer, unsigned char channel);
 /************************************************************************/
 
 uint8_t config_compare(unsigned char timer, unsigned char channel, uint16_t comp);
-uint8_t get_compare(unsigned char timer, unsigned char channel, uint16_t *comp);
+uint8_t get_compare(unsigned char timer, unsigned char channel, uint16_t* comp);
 
 /************************************************************************/
 /* TIMER COUNTER                                                        */
 /************************************************************************/
 
 uint8_t config_counter(unsigned char timer, uint16_t count);
-uint8_t get_counter(unsigned char timer, uint16_t *count);
+uint8_t get_counter(unsigned char timer, uint16_t* count);
 
 /************************************************************************/
 /* TIMER INPUT CAPTURE                                                  */
 /************************************************************************/
 
 uint8_t config_t1_capture(uint16_t value);
-uint8_t get_t1_capture(uint16_t *value);
+uint8_t get_t1_capture(uint16_t* value);
 
 #define T1_SRC_ICP1         (0)
 #define T1_SRC_ANALOG_COMP  (1)
@@ -174,7 +174,7 @@ uint8_t config_interrupt(unsigned char timer, unsigned char interrupt, unsigned 
 #define OCCURRED    (1)
 #define NO_OCCUR    (0)
 
-uint8_t get_interrupted(unsigned char timer, unsigned char interrupt, unsigned char *happened);
+uint8_t get_interrupted(unsigned char timer, unsigned char interrupt, unsigned char* happened);
 uint8_t clear_interrupted(unsigned char timer, unsigned char interrupt);
 
 /************************************************************************/
@@ -206,7 +206,7 @@ uint8_t config_t2_external(unsigned char enable);
 #define T2_CONTROL_A_BUSY  (TCR2AUB)
 #define T2_CONTROL_B_BUSY  (TCR2BUB)
 
-uint8_t get_t2_busy(unsigned char flag, unsigned char *busy);
+uint8_t get_t2_busy(unsigned char flag, unsigned char* busy);
 
 /************************************************************************/
 /* TIMER POWER REDUCTION CONTROL                                        */
@@ -224,6 +224,6 @@ uint8_t get_t2_busy(unsigned char flag, unsigned char *busy);
 #define PR_I2C      (PRTWI)
 
 uint8_t config_power_reduction(unsigned char feat, unsigned char enabled);
-uint8_t get_power_reduction(unsigned char feat, unsigned char *enabled);
+uint8_t get_power_reduction(unsigned char feat, unsigned char* enabled);
 
 #endif

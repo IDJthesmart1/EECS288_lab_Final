@@ -2,8 +2,9 @@
  *   Header Includes
  *******************************************************************************/
 #include <Arduino.h>
+
 #include <stdint.h>
-#include <stdio.h>
+#include <string.h>
 
 #include "eecs_388_lib.h"
 
@@ -17,7 +18,6 @@
  *******************************************************************************/
 void setup() {
   uart_init();
-
   return;
 }
 
@@ -31,16 +31,16 @@ void setup() {
  *******************************************************************************/
 void loop() {
   if ('Y' == ser_read() && 'Y' == ser_read()) {
-    uint8_t Dist_L = ser_read();
-    uint8_t Dist_H = ser_read();
-    uint16_t distance = Dist_L | (Dist_H << 8); /* LIDAR distance data is 16 bits. */
-    uint8_t Strength_L = ser_read();
-    uint8_t Strength_H = ser_read();
-    uint16_t strength = Strength_L | (Strength_H << 8);
+    uint8_t dist_L = ser_read();
+    uint8_t dist_H = ser_read();
+    uint16_t distance = dist_L | (dist_H << 8); /* LIDAR distance data is 16 bits. */
+    uint8_t strength_L = ser_read();
+    uint8_t strength_H = ser_read();
+    uint16_t strength = strength_L | (strength_H << 8);
     uint8_t reserved = ser_read();
     uint8_t quality = ser_read();
     // Checksum is the lower 8 bits of the sum of the first 8 bytes of actual data
-    uint8_t calculated_checksum = (uint8_t)('Y' + 'Y' + Dist_L + Dist_H + Strength_L + Strength_H + reserved + quality);
+    uint8_t calculated_checksum = (uint8_t)('Y' + 'Y' + dist_L + dist_H + strength_L + strength_H + reserved + quality);
     uint8_t checksum = ser_read();
     // distance is a 16-bit value, with a valid range of 30 to 1200 cm
 

@@ -1,116 +1,34 @@
-/******************************************************************************
- *   Header Includes
- *******************************************************************************/
-#include <avr/io.h>
-#include <stdint.h>
+/************************************************************************/
+/*                                                                      */
+/* NAME:    timer.cpp                                                   */
+/* AUTHOR:  William Sierra                                              */
+/* DESC:    High-level helper methods and timer control                 */
+/*                                                                      */
+/************************************************************************/
+extern "C" {
+  #include <avr/interrupt.h>
 
-#include "eecs_388_lib.h"
-#include "wiring_private.h"
-#include "pins_arduino.h"
-#include "timer.h"
-
-/******************************************************************************
- *  Timer Interrupt Functions
- *******************************************************************************/
-
-uint16_t get_cycles(uint8_t timer) {
-  if (timer == 0)
-    return TCNT0;
-  if (timer == 1)
-    return TCNT1;
-  if (timer == 2)
-    return TCNT2;
-  return 0;
+  #include <stdint.h>
 }
 
-int set_cycles(uint16_t cycle, uint8_t timer) {
-  if (timer == 0) {
-    if (cycle > 255) // ensure cycles do not exceed 8 bits for this timer.
-      return -1;
-    TCNT0 = 0;
-    OCR0A = cycle;
-    return 0;
-  }
-  if (timer == 1) {
-    TCNT1 = 0;
-    OCR1A = cycle;
-    return 0;
-  }
-  if (timer == 2) {
-    if (cycle > 255)
-      return -1;
-    TCNT2 = 0;
-    OCR2A = cycle;
-    return 0;
-  }
-  return -1;
-}
+#include <timer.hpp>
+#include <timerctrl.hpp>
 
-int stop_timer(uint8_t timer) {
-  if (timer == 0) {
-    TCCR0B &= ~((1 << CS02) | (1 << CS01) | (1 << CS00));
-    return 0;
-  }
-  if (timer == 1) {
-    TCCR1B &= ~((1 << CS12) | (1 << CS11) | (1 << CS10));
-    return 0;
-  }
-  if (timer == 2) {
-    TCCR2B &= ~((1 << CS22) | (1 << CS21) | (1 << CS20));
-    return 0;
-  }
-  return -1;
-}
+/************************************************************************/
+/* GLOBAL TIMER CONTROL                                                 */
+/************************************************************************/
 
-void enable_interrupt(void) {
+void enable_interrupt() {
   sei(); // set SREG I-bit
 }
 
-void disable_interrupt(void) {
+void disable_interrupt() {
   cli(); // clear SREG I-bit
 }
 
-int enable_timer_interrupt(uint8_t shift, uint8_t timer) {
-  // Setup CTC mode and prescalar value
-  if (timer == 0) {
-    TIFR0 = (0x1 << OCF0A);
-    TCCR0A = (0x1 << WGM01);
-    TCCR0B = shift;
-    TIMSK0 |= (0x1 << OCIE0A);
-    return 0;
-  }
-  if (timer == 1) {
-    TIFR1 = (0x1 << OCF1A);
-    TCCR1A = 0;
-    TCCR1B = (0x1 << WGM12) | shift;
-    TIMSK1 |= (0x1 << OCIE1A);
-    return 0;
-  }
-  if (timer == 2) {
-    TIFR2 = (0x1 << OCF2A);
-    TCCR2A = (0x1 << WGM21);
-    TCCR2B = shift;
-    TIMSK2 |= (0x1 << OCIE2A);
-    return 0;
-  }
-  return -1;
-}
-
-int disable_timer_interrupt(int timer) {
-  if (timer == 0) {
-    TIMSK0 &= ~(0x1 << OCIE0A);
-    return 0;
-  }
-  if (timer == 1) {
-    TIMSK1 &= ~(0x1 << OCIE1A);
-    return 0;
-  }
-  if (timer == 2) {
-    TIMSK2 &= ~(0x1 << OCIE2A);
-    return 0;
-  }
-  return -1;
-}
+/************************************************************************/
+/* MATH HELPERS                                                         */
+/************************************************************************/
 
 uint32_t pow(uint32_t n, uint32_t e) {
   uint32_t out = 1;
@@ -122,14 +40,18 @@ uint32_t pow(uint32_t n, uint32_t e) {
   return out;
 }
 
-int _set_interrupt_timer_0(uint32_t period_us, uint32_t* cycles, uint8_t* shift) {
+/************************************************************************/
+/* TIMER CONTROLS                                                       */
+/************************************************************************/
+
+uint8_t _setup_t0period(uint32_t period_us, uint32_t* cycles, uint8_t* shift) {
   const uint32_t prescalar_values[5] = { 1, 8, 64, 256, 1024 };
-  const uint8_t prescalar_shifts[5] = {
-    (0x1 << CS00),
-    (0x1 << CS01),
-    (0x1 << CS00) | (0x1 << CS01),
-    (0x1 << CS02),
-    (0x1 << CS02) | (0x1 << CS00)
+  const uint8_t prescaler_codes[5] = {
+      T0_PRESCALER_1,
+      T0_PRESCALER_8,
+      T0_PRESCALER_64,
+      T0_PRESCALER_256,
+      T0_PRESCALER_1024
   };
   static const uint32_t timer_width_bits = 8;
 
@@ -143,21 +65,21 @@ int _set_interrupt_timer_0(uint32_t period_us, uint32_t* cycles, uint8_t* shift)
     if (request_cycles == 0)
       return -1;
     *cycles = request_cycles - 1;
-    *shift = prescalar_shifts[i];
-    return 0;
+    *shift = prescaler_codes[i];
+    return SUCCESS;
   }
 
-  return -1;
+  return INVALID_ARG;
 }
 
-int _set_interrupt_timer_1(uint32_t period_us, uint32_t* cycles, uint8_t* shift) {
+uint8_t _setup_t1period(uint32_t period_us, uint32_t* cycles, uint8_t* shift) {
   const uint32_t prescalar_values[5] = { 1, 8, 64, 256, 1024 };
-  const uint8_t prescalar_shifts[5] = {
-    (0x1 << CS10),
-    (0x1 << CS11),
-    (0x1 << CS10) | (0x1 << CS11),
-    (0x1 << CS12),
-    (0x1 << CS12) | (0x1 << CS10)
+  const uint8_t prescaler_codes[5] = {
+      T1_PRESCALER_1,
+      T1_PRESCALER_8,
+      T1_PRESCALER_64,
+      T1_PRESCALER_256,
+      T1_PRESCALER_1024
   };
   static const uint32_t timer_width_bits = 16;
 
@@ -171,23 +93,23 @@ int _set_interrupt_timer_1(uint32_t period_us, uint32_t* cycles, uint8_t* shift)
     if (request_cycles == 0)
       return -1;
     *cycles = request_cycles - 1;
-    *shift = prescalar_shifts[i];
+    *shift = prescaler_codes[i];
     return 0;
   }
 
-  return -1;
+  return INVALID_ARG;
 }
 
-int _set_interrupt_timer_2(uint32_t period_us, uint32_t* cycles, uint8_t* shift) {
+uint8_t _setup_t2period(uint32_t period_us, uint32_t* cycles, uint8_t* shift) {
   static const uint32_t prescalar_values[7] = { 1, 8, 32, 64, 128, 256, 1024 };
-  static const uint8_t prescalar_shifts[7] = {
-    (0x1 << CS20), 									// 1 
-    (0x1 << CS21),  								// 8
-    (0x1 << CS20) | (0x1 << CS21),  				// 32
-    (0x1 << CS22),									// 64
-    (0x1 << CS22) | (0x1 << CS20),					// 128
-    (0x1 << CS22) | (0x1 << CS21),  				// 256
-    (0x1 << CS22) | (0x1 << CS21) | (0x1 << CS20) 	// 1024
+  const uint8_t prescaler_codes[7] = {
+      T2_PRESCALER_1,
+      T2_PRESCALER_8,
+      T2_PRESCALER_32,
+      T2_PRESCALER_64,
+      T2_PRESCALER_128,
+      T2_PRESCALER_256,
+      T2_PRESCALER_1024
   };
   static const uint32_t timer_width_bits = 8;
 
@@ -201,36 +123,100 @@ int _set_interrupt_timer_2(uint32_t period_us, uint32_t* cycles, uint8_t* shift)
     if (request_cycles == 0)
       return -1;
     *cycles = request_cycles - 1;
-    *shift = prescalar_shifts[i];
-    return 0;
+    *shift = prescaler_codes[i];
+    return SUCCESS;
   }
 
-  return -1;
+  return INVALID_ARG;
 }
 
-/* Timer 0: 8bits, 	maximum time 0.016384s or 16.384ms
- * Timer 1: 16bits, maximum time 4.194304s or 4194.304ms
- * Timer 2: 8bits, 	maximum time 0.016384s or 16.384ms
- *
- * Returns 0 if successful, or -1 if bad arguments.
- */
-int set_interrupt_timer(uint32_t period_us, uint8_t timer) {
-  if (timer > 2) return -1;
+uint8_t setup_period(unsigned char timer, uint32_t period_us) {
+  if (timer > 2)
+    return INVALID_ARG;
 
   uint32_t cycles;
   uint8_t shift;
 
-  if (timer == 0 && _set_interrupt_timer_0(period_us, &cycles, &shift))
-    return -1;
-  if (timer == 1 && _set_interrupt_timer_1(period_us, &cycles, &shift))
-    return -1;
-  if (timer == 2 && _set_interrupt_timer_2(period_us, &cycles, &shift))
-    return -1;
+  if (timer == 0) {
+    if (_setup_t0period(period_us, &cycles, &shift))
+      return INVALID_ARG;
 
-  if (stop_timer(timer))
-    return -1;
+    config_clock(timer, 0);
+    config_wgen(timer, T0_CTC_OUT);
+  }
 
-  enable_timer_interrupt(shift, timer);
-  set_cycles(cycles, timer);
-  return 0;
+  if (timer == 1) {
+    if (_setup_t1period(period_us, &cycles, &shift))
+      return INVALID_ARG;
+
+    config_clock(timer, 0);
+    config_wgen(timer, T1_CTC_OUT);
+  }
+
+  if (timer == 2) {
+    if (_setup_t2period(period_us, &cycles, &shift))
+      return INVALID_ARG;
+
+    config_clock(timer, 0);
+    config_wgen(timer, T2_CTC_OUT);
+  }
+
+  config_compare(timer, CHANNEL_A, cycles);
+  config_counter(timer, 0);
+  config_clock(timer, shift);
+
+  return SUCCESS;
+}
+
+// TODO: Finish method for other timers other than 1.
+// Each have different features and are configured differently.
+uint8_t setup_pwm(
+  unsigned char timer,
+  unsigned char channel,
+  uint32_t frequency_hz,
+  uint16_t duty_cycle
+) {
+  if (timer != 1 || channel > CHANNEL_B ||
+    frequency_hz == 0 || duty_cycle > 1000)
+    return INVALID_ARG;
+
+  const uint16_t prescalers[5] = { 1, 8, 64, 256, 1024 };
+  const uint8_t codes[5] = {
+      T1_PRESCALER_1,
+      T1_PRESCALER_8,
+      T1_PRESCALER_64,
+      T1_PRESCALER_256,
+      T1_PRESCALER_1024
+  };
+
+  uint32_t top = 0;
+  uint8_t clock = 0;
+
+  for (uint8_t i = 0; i < 5; i++) {
+    uint64_t counts = 16000000ULL /
+      ((uint64_t)prescalers[i] * frequency_hz);
+
+    if (counts < 2 || counts > 65536)
+      continue;
+
+    top = counts - 1;
+    clock = codes[i];
+    break;
+  }
+
+  if (clock == 0)
+    return INVALID_ARG;
+
+// Duty cycle expressed in tenths of a percent (0.0% – 100.0%).
+  uint32_t compare = ((uint64_t)(top + 1) * duty_cycle) / 1000;
+
+  config_clock(1, T1_STOPPED);
+  config_wgen(1, T1_PWM_F_IN);
+  config_t1_capture(top);
+  config_compare(1, channel, compare);
+  config_chan(1, channel, PWM_F_NINVERT);
+  config_counter(1, 0);
+  config_clock(1, clock);
+
+  return SUCCESS;
 }

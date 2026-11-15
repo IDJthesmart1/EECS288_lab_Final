@@ -42,10 +42,10 @@ uint8_t setup_period(unsigned char timer, uint32_t period_us);
 /* Timer 0/2: Fast PWM, fixed TOP=OCRnA, max frequency 8MHz             */
 /************************************************************************/
 uint8_t setup_pwm(
-    unsigned char timer,
-    unsigned char channel,
-    uint16_t frequency_Hz,
-    uint16_t duty_cycle_pct
+  unsigned char timer,
+  unsigned char channel,
+  uint16_t frequency_Hz,
+  uint16_t duty_cycle_pct
 );
 
 
