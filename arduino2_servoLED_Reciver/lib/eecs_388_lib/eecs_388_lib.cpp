@@ -2,15 +2,15 @@
  *   Header Includes
  *******************************************************************************/
 
- extern "C" {
-   #include <avr/io.h>
-   #include <util/delay.h>
-   #include <util/twi.h>
-   #include "wiring_private.h"
-   #include "pins_arduino.h"
+extern "C" {
+#include <avr/io.h>
+#include <util/delay.h>
+#include <util/twi.h>
+#include "wiring_private.h"
+#include "pins_arduino.h"
 
-   #include <stdint.h>
- }
+#include <stdint.h>
+}
 
 #include "eecs_388_lib.hpp"
 
@@ -80,6 +80,8 @@ static void turnOffPWM(uint8_t timer) {
   }
 }
 
+bool isTimerRunning[3] = { false, false, false }; // Track the running state of each timer
+
 /******************************************************************************
  *   Library functions
  *******************************************************************************/
@@ -102,24 +104,18 @@ void gpio_mode(uint8_t pin, uint8_t mode) {
   reg = portModeRegister(port);
   out = portOutputRegister(port);
 
+  uint8_t oldSREG = SREG;
+  cli();
   if (mode == GPIO_INPUT) {
-    uint8_t oldSREG = SREG;
-    cli();
     *reg &= ~bit;
     *out &= ~bit;
-    SREG = oldSREG;
   } else if (mode == INPUT_PULLUP) {
-    uint8_t oldSREG = SREG;
-    cli();
     *reg &= ~bit;
     *out |= bit;
-    SREG = oldSREG;
   } else {
-    uint8_t oldSREG = SREG;
-    cli();
     *reg |= bit;
-    SREG = oldSREG;
   }
+  SREG = oldSREG;
 
   return;
 }
@@ -180,9 +176,30 @@ void uart_init() {
 
   // Setup double speed mode. Modify U2X0 only to set it in UCSR0A for double speed mode
   UCSR0A |= 1 << U2X0;
-  // Enable transmitter/receiver
-  UCSR0B = (1 << RXEN0) | (1 << TXEN0);
+  // Enable transmitter, receiver, and receive complete interrupt
+  UCSR0B = (1 << RXEN0) | (1 << TXEN0) | (1 << RXCIE0);
   // 8-bit signal, (7 data bits, no parity, 1 stop, async)
   UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
 }
 
+
+
+Timer ctc_init(uint32_t period_us) {
+  if (!isTimerRunning[0]) {
+    isTimerRunning[0] = true;
+    setup_period(0, period_us);
+    Timer ret = { TIMER0_COMPA_vect };
+    return { ret };
+  } else if (!isTimerRunning[1]) {
+    isTimerRunning[1] = true;
+    setup_period(1, period_us);
+    Timer ret = { TIMER1_COMPA_vect };
+    return { ret };
+  } else if (!isTimerRunning[2]) {
+    isTimerRunning[2] = true;
+    setup_period(2, period_us);
+    Timer ret = { TIMER2_COMPA_vect };
+    return { ret };
+  }
+  return { 0 }; // No available timers
+}

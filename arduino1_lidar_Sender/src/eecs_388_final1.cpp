@@ -21,15 +21,7 @@ void setup() {
   return;
 }
 
-/******************************************************************************
- *   Function: loop() - Main execution loop
- *      Pre condition:
- *          setup() has been executed and system is initialized
- *      Post condition:
- *          Performs a single iteration of the system's function
- *          Repeates indefinetely unless the board is reset or powered off
- *******************************************************************************/
-void loop() {
+ISR(USART_RX_vect) {
   if ('Y' == ser_read() && 'Y' == ser_read()) {
     uint8_t dist_L = ser_read();
     uint8_t dist_H = ser_read();
@@ -53,5 +45,18 @@ void loop() {
       ser_write((uint8_t)distance);
     }
   }
+  return;
+}
+
+/******************************************************************************
+ *   Function: loop() - Main execution loop
+ *      Pre condition:
+ *          setup() has been executed and system is initialized
+ *      Post condition:
+ *          Performs a single iteration of the system's function
+ *          Repeates indefinetely unless the board is reset or powered off
+ *******************************************************************************/
+void loop() {
+
   return;
 }

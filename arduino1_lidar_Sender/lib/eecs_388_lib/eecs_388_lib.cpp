@@ -97,24 +97,18 @@ void gpio_mode(uint8_t pin, uint8_t mode) {
   reg = portModeRegister(port);
   out = portOutputRegister(port);
 
+  uint8_t oldSREG = SREG;
+  cli();
   if (mode == GPIO_INPUT) {
-    uint8_t oldSREG = SREG;
-    cli();
     *reg &= ~bit;
     *out &= ~bit;
-    SREG = oldSREG;
   } else if (mode == INPUT_PULLUP) {
-    uint8_t oldSREG = SREG;
-    cli();
     *reg &= ~bit;
     *out |= bit;
-    SREG = oldSREG;
   } else {
-    uint8_t oldSREG = SREG;
-    cli();
     *reg |= bit;
-    SREG = oldSREG;
   }
+  SREG = oldSREG;
 
   return;
 }
@@ -156,8 +150,8 @@ void uart_init() {
 
   // Setup double speed mode. Modify U2X0 only to set it in UCSR0A for double speed mode
   UCSR0A |= 1 << U2X0;
-  // Enable transmitter/receiver
-  UCSR0B = (1 << RXEN0) | (1 << TXEN0);
+  // Enable transmitter, receiver, and receive complete interrupt
+  UCSR0B = (1 << RXEN0) | (1 << TXEN0) | (1 << RXCIE0);
   // 8-bit data, leaves parity/stop/mode to defaults (no parity, 1 stop, async)
   UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
 }
