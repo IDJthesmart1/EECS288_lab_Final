@@ -48,5 +48,8 @@ uint8_t setup_pwm(
   uint16_t duty_cycle_pct
 );
 
+uint16_t to_duty_cycle(uint16_t period_ms, uint16_t block_ms);
+
+uint8_t setup_period_20ms_pwm(unsigned char channel, uint16_t duty_cycle_10pct);
 
 #endif

@@ -163,15 +163,45 @@ uint8_t setup_period(unsigned char timer, uint32_t period_us) {
   return SUCCESS;
 }
 
+uint16_t to_duty_cycle(uint16_t period_ms, uint16_t block_ms)
+{
+  return (block_ms*1000) / period_ms;
+}
+
+uint8_t setup_period_20ms_pwm(unsigned char channel, uint16_t duty_cycle_10pct)
+{
+  // Frequency controlled by TOP (ICR1)
+  // Duty Cycle controlled by compare value
+
+  config_clock(1, T1_STOPPED);
+
+  uint16_t top = 40000;
+
+  // Setup 20ms period = 50 Hz frequency
+  config_wgen(1, T1_PWM_F_IN);  // TOP = ICR1
+  config_t1_capture(top-1);     // ICR1 = 39999
+
+  config_chan(1, channel, PWM_F_NINVERT);
+
+  // 100% duty cycle, duty_cycle_10pct = 1000 = 100_0 === 100.0
+  uint16_t compare_value = ((uint32_t) top*duty_cycle_10pct)/1000;
+  config_compare(1, channel, compare_value);
+  
+  // Reset clock to continue.
+  config_counter(1, 0);
+  config_clock(1, T1_PRESCALER_8);
+
+  return SUCCESS;
+}
+
 // TODO: Finish method for other timers other than 1.
 // Each have different features and are configured differently.
-uint8_t setup_pwm(
-  unsigned char timer,
+uint8_t setup_pwm_t1(
   unsigned char channel,
   uint32_t frequency_hz,
   uint16_t duty_cycle
 ) {
-  if (timer != 1 || channel > CHANNEL_B ||
+  if (channel > CHANNEL_B ||
     frequency_hz == 0 || duty_cycle > 1000)
     return INVALID_ARG;
 

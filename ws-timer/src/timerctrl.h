@@ -60,6 +60,7 @@
 #define T2_PWM_PC_OUT   5
 #define T2_PWM_F_OUT    7
 
+// Configures the waveform generation mode of the selected timer.
 uint8_t config_wgen(unsigned char timer, unsigned char wgm);
 
 /************************************************************************/
@@ -79,7 +80,20 @@ uint8_t config_wgen(unsigned char timer, unsigned char wgm);
 #define CHANNEL_A   (0b0)
 #define CHANNEL_B   (0b1)
 
+/************************************************************************/
+/* CHANNEL PINS                                                         */
+/* - Timer 0/A: D6                                                      */
+/* - Timer 0/B: D5                                                      */
+/* - Timer 1/A: D9                                                      */
+/* - Timer 1/B: D10                                                     */
+/* - Timer 2/A: D11                                                     */
+/* - Timer 2/B: D3                                                      */
+/************************************************************************/
+
+// Configures how an output compare channel controls its hardware output pin.
 uint8_t config_chan(unsigned char timer, unsigned char channel, unsigned char ctrl);
+
+// Retrives the GPIO pin associated with a timer's output compare channel (see CHANNEL PINS).
 uint8_t get_timer_pin(unsigned char timer, unsigned char channel, unsigned char* pin);
 
 /************************************************************************/
@@ -113,6 +127,7 @@ uint8_t get_timer_pin(unsigned char timer, unsigned char channel, unsigned char*
 #define T2_PRESCALER_256    (0b110)
 #define T2_PRESCALER_1024   (0b111)
 
+// Selects the timer clock source or prescalar, including stopping the timer.
 uint8_t config_clock(unsigned char timer, unsigned char clk);
 
 /************************************************************************/
@@ -124,33 +139,46 @@ uint8_t config_clock(unsigned char timer, unsigned char clk);
 #define T1_EDGE_RISE    (1)
 #define T1_EDGE_FALL    (0)
 
+// Sets Timer 1's input capture edge selection and noise cancellation filter.
 uint8_t config_t1_capture_settings(unsigned char edge, unsigned char filter);
+
+// Forces an output compare action on the selected channel (in non-PWM mode).
 uint8_t force_output(unsigned char timer, unsigned char channel);
 
 /************************************************************************/
 /* TIMER OUTPUT COMPARE                                                 */
 /************************************************************************/
 
+// Writes to the output compare register for the selected timer and channel.
 uint8_t config_compare(unsigned char timer, unsigned char channel, uint16_t comp);
+
+// Retrieves the current counter compare value of the selected timer.
 uint8_t get_compare(unsigned char timer, unsigned char channel, uint16_t* comp);
 
 /************************************************************************/
 /* TIMER COUNTER                                                        */
 /************************************************************************/
 
+// Sets the current counter value of the selected timer.
 uint8_t config_counter(unsigned char timer, uint16_t count);
+
+// Retrieves the current counter value of the selected timer.
 uint8_t get_counter(unsigned char timer, uint16_t* count);
 
 /************************************************************************/
 /* TIMER INPUT CAPTURE                                                  */
 /************************************************************************/
 
+// Writes to Timer 1's input capture register (ICR1).
 uint8_t config_t1_capture(uint16_t value);
+
+// Retrieves the value in Timer 1's input capture register (ICR1).
 uint8_t get_t1_capture(uint16_t* value);
 
 #define T1_SRC_ICP1         (0)
 #define T1_SRC_ANALOG_COMP  (1)
 
+// Selects Timer 1's input capture source.
 uint8_t config_t1_capture_src(unsigned char src);
 
 /************************************************************************/
@@ -165,6 +193,7 @@ uint8_t config_t1_capture_src(unsigned char src);
 #define CHANNEL_B_COMPARE   (2)
 #define T1_INPUT_CAPTURE    (ICIE1)
 
+// Enables or disables interrupts for the selected timer.
 uint8_t config_interrupt(unsigned char timer, unsigned char interrupt, unsigned char allow);
 
 #define CHANNEL_A_INTERRUPTED   (1)
@@ -174,7 +203,10 @@ uint8_t config_interrupt(unsigned char timer, unsigned char interrupt, unsigned 
 #define OCCURRED    (1)
 #define NO_OCCUR    (0)
 
+// Checks whether the interrupt flag is set for the selected timer.
 uint8_t get_interrupted(unsigned char timer, unsigned char interrupt, unsigned char* happened);
+
+// Clears the interrupt flag for the selected timer.
 uint8_t clear_interrupted(unsigned char timer, unsigned char interrupt);
 
 /************************************************************************/
@@ -184,7 +216,10 @@ uint8_t clear_interrupted(unsigned char timer, unsigned char interrupt);
 #define SYNC_ENABLE  (1)
 #define SYNC_DISABLE (0)
 
+// Enables or disables timer synchronization mode through the general timer control register.
 uint8_t config_sync(unsigned char enable);
+
+// Resets the prescaler on the selected timer.
 uint8_t reset_prescalar(unsigned char timer);
 
 /************************************************************************/
@@ -194,7 +229,10 @@ uint8_t reset_prescalar(unsigned char timer);
 #define T2_OP_ENABLE     (1)
 #define T2_OP_DISABLE    (0)
 
+// Enables or disables Timer 2's asynchronous clock operation.
 uint8_t config_t2_async(unsigned char enable);
+
+// Configures Timer 2's external clock input option for asynchronous operation.
 uint8_t config_t2_external(unsigned char enable);
 
 #define T2_BUSY  (1)
@@ -206,6 +244,7 @@ uint8_t config_t2_external(unsigned char enable);
 #define T2_CONTROL_A_BUSY  (TCR2AUB)
 #define T2_CONTROL_B_BUSY  (TCR2BUB)
 
+// Reports whether a selected Timer 2 asynchronous register update is pending.
 uint8_t get_t2_busy(unsigned char flag, unsigned char* busy);
 
 /************************************************************************/
@@ -223,7 +262,10 @@ uint8_t get_t2_busy(unsigned char flag, unsigned char* busy);
 #define PR_ADC      (PRADC)
 #define PR_I2C      (PRTWI)
 
+// Enables or disables power reduction for a selected peripheral.
 uint8_t config_power_reduction(unsigned char feat, unsigned char enabled);
+
+// Retrieves current power reduction state for the selected peripheral.
 uint8_t get_power_reduction(unsigned char feat, unsigned char* enabled);
 
 #endif
